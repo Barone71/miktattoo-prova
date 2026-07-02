@@ -5,7 +5,7 @@ function Home() {
     <section className="home-page">
       <section className="hero">
         <div className="hero-content reveal">
-          <p className="eyebrow">Tattoo studio · Vico del Gargano</p>
+          <p className="eyebrow">Tattoo studio · Napoli</p>
 
           <h1>
             Mik Tattoo <br /> Ink

@@ -93,3 +93,35 @@ Per passare a una versione reale, il prossimo step è aggiungere:
 - autenticazione admin
 - invio email di conferma
 - integrazione Google Calendar
+
+## Deploy su Netlify
+
+Il repository contiene sia `frontend` sia `backend`. Netlify deve pubblicare solo il frontend statico.
+
+Configurazione consigliata:
+
+- Base directory: `frontend`
+- Build command: `npm run build`
+- Publish directory: `dist`
+
+Nel progetto è già presente `netlify.toml` alla root:
+
+```toml
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+È presente anche `frontend/public/_redirects` per evitare errori 404 sulle rotte React Router come `/lavori`, `/prenota` e `/chi-sono`.
+
+Nota: Netlify ospita il frontend. Il backend Spring Boot va pubblicato separatamente, per esempio su Render, Railway, Fly.io o VPS. Quando avrai l'URL del backend, impostalo su Netlify come variabile ambiente:
+
+```txt
+VITE_API_BASE_URL=https://tuo-backend.example.com/api
+```

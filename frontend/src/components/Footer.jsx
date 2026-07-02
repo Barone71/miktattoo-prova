@@ -7,7 +7,7 @@ function Footer() {
       </div>
 
       <div className="footer-right">
-        <p>Vico del Gargano, Italia</p>
+        <p>Napoli, Italia</p>
         <p>© 2026</p>
       </div>
     </footer>
