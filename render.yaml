@@ -1,0 +1,58 @@
+# Configurazione Render (Blueprint): crea il backend e il database PostgreSQL
+# e li collega automaticamente. Render → New → Blueprint → seleziona questo repository.
+services:
+  - type: web
+    name: miktattoo-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/works
+    autoDeploy: true
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        fromDatabase:
+          name: miktattoo-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: miktattoo-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: miktattoo-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: miktattoo-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: miktattoo-db
+          property: password
+      - key: ADMIN_USERNAME
+        value: mik
+      # Render genera una password casuale: si legge in Dashboard → miktattoo-backend → Environment
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      # Indirizzo del sito su Netlify, richiesto alla creazione (es. https://miktattoo.netlify.app)
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Email che riceve le notifiche delle prenotazioni, richiesta alla creazione
+      - key: NOTIFY_EMAIL
+        sync: false
+      # Per l'anteprima: crea orari di esempio così il calendario non è vuoto
+      - key: DEMO_SEED_SLOTS
+        value: "true"
+
+databases:
+  - name: miktattoo-db
+    plan: free
+    region: frankfurt
+    databaseName: miktattoo
+    user: miktattoo
+    postgresMajorVersion: "16"

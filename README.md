@@ -124,34 +124,32 @@ Online si impostano le stesse voci come variabili ambiente del servizio di hosti
 
 - pagamento della prenotazione (50 €) con Stripe
 
-## Deploy su Netlify
+## Pubblicazione online
 
-Il repository contiene sia `frontend` sia `backend`. Netlify deve pubblicare solo il frontend statico.
+Il sito è diviso in due parti pubblicate separatamente:
 
-Configurazione consigliata:
+| Parte | Dove | Configurazione |
+|---|---|---|
+| Frontend (React) | Netlify | `netlify.toml` |
+| Backend (Spring Boot) + database PostgreSQL | Render | `render.yaml` + `backend/Dockerfile` |
 
-- Base directory: `frontend`
-- Build command: `npm run build`
-- Publish directory: `dist`
+### Backend su Render
 
-Nel progetto è già presente `netlify.toml` alla root:
+1. Su [render.com](https://render.com) crea un account e collega GitHub.
+2. **New → Blueprint** e scegli questo repository: Render legge `render.yaml` e crea il servizio `miktattoo-backend` e il database `miktattoo-db`, già collegati.
+3. Alla creazione vengono chiesti:
+   - `CORS_ALLOWED_ORIGINS`: l'indirizzo del sito su Netlify (es. `https://miktattoo.netlify.app`); più indirizzi separati da virgola.
+   - `NOTIFY_EMAIL`: l'email del tatuatore per le notifiche.
+4. La password del pannello admin la genera Render: **Dashboard → miktattoo-backend → Environment → ADMIN_PASSWORD**. Username: `mik`.
+5. Per l'invio vero delle email aggiungi in *Environment* `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`.
 
-```toml
-[build]
-  base = "frontend"
-  command = "npm run build"
-  publish = "dist"
+Note sul piano gratuito di Render:
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
+- il backend si "addormenta" dopo 15 minuti senza visite: la prima richiesta dopo una pausa può richiedere fino a un minuto;
+- il database PostgreSQL gratuito scade dopo 30 giorni: per il sito definitivo passare a un piano a pagamento o a un database esterno (es. Neon).
 
-È presente anche `frontend/public/_redirects` per evitare errori 404 sulle rotte React Router come `/lavori`, `/prenota` e `/chi-sono`.
+`DEMO_SEED_SLOTS=true` crea orari di esempio per l'anteprima; per il sito definitivo va messo a `false` e gli orari si gestiscono dal pannello admin.
 
-Nota: Netlify ospita il frontend. Il backend Spring Boot va pubblicato separatamente, per esempio su Render, Railway, Fly.io o VPS. Quando avrai l'URL del backend, impostalo su Netlify come variabile ambiente:
+### Frontend su Netlify
 
-```txt
-VITE_API_BASE_URL=https://tuo-backend.example.com/api
-```
+`netlify.toml` contiene già tutto: cartella `frontend`, comando di build, redirect per le pagine React e l'indirizzo del backend (`VITE_API_BASE_URL`). Se Render assegna al backend un indirizzo diverso da `https://miktattoo-backend.onrender.com`, va aggiornato lì.
