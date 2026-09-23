@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { createBooking, getAvailability, getBookings } from "../services/api";
+import MonthCalendar from "../components/MonthCalendar";
+import { createBooking, getAvailability } from "../services/api";
+import { formatLongDate } from "../utils/dates";
 
 const initialForm = {
   name: "",
@@ -15,20 +17,19 @@ function Booking() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [form, setForm] = useState(initialForm);
-  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [errorDetails, setErrorDetails] = useState([]);
 
   function loadData() {
     setLoading(true);
-    Promise.all([getAvailability(), getBookings()])
-      .then(([slots, demoBookings]) => {
+    getAvailability()
+      .then((slots) => {
         setAvailability(slots);
-        setBookings(demoBookings);
         const firstAvailable = slots.find((slot) => slot.available);
-        setSelectedDate((current) => current || firstAvailable?.date || slots[0]?.date || "");
+        setSelectedDate((current) => current || firstAvailable?.date || "");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -38,7 +39,25 @@ function Booking() {
     loadData();
   }, []);
 
-  const dates = useMemo(() => [...new Set(availability.map((slot) => slot.date))], [availability]);
+  // Per ogni giorno: quanti orari ci sono e quanti sono ancora liberi.
+  const daySummary = useMemo(() => {
+    const summary = {};
+    availability.forEach((slot) => {
+      summary[slot.date] ??= { total: 0, free: 0 };
+      summary[slot.date].total += 1;
+      if (slot.available) summary[slot.date].free += 1;
+    });
+    return summary;
+  }, [availability]);
+
+  function getDayState(iso) {
+    const day = daySummary[iso];
+    if (!day) return { status: "none", disabled: true };
+    if (day.free === 0) return { status: "full", disabled: true };
+    return { status: "available", disabled: false };
+  }
+
+  const hasFreeSlots = availability.some((slot) => slot.available);
   const daySlots = availability.filter((slot) => slot.date === selectedDate);
   const selectedSlot = availability.find((slot) => slot.id === selectedSlotId);
 
@@ -51,21 +70,23 @@ function Booking() {
     event.preventDefault();
     setMessage("");
     setError("");
+    setErrorDetails([]);
 
     if (!selectedSlotId) {
-      setError("Seleziona uno slot disponibile prima di confermare.");
+      setError("Scegli un giorno e un orario prima di confermare.");
       return;
     }
 
     try {
       setSubmitting(true);
       const booking = await createBooking({ ...form, slotId: selectedSlotId });
-      setMessage(`Prenotazione confermata per ${booking.date} alle ${booking.startTime}. Ti ricontatteremo via email.`);
+      setMessage(`Prenotazione confermata per ${formatLongDate(booking.date)} alle ${booking.startTime}. Ti ricontatteremo via email.`);
       setForm(initialForm);
       setSelectedSlotId("");
       loadData();
     } catch (err) {
       setError(err.message);
+      setErrorDetails(err.details || []);
     } finally {
       setSubmitting(false);
     }
@@ -74,10 +95,9 @@ function Booking() {
   return (
     <section className="page booking-page">
       <div className="page-header">
-        <p className="eyebrow">Booking</p>
         <h1>Prenota</h1>
         <p>
-          Scegli giorno e orario disponibili per una consulenza sul tuo prossimo tatuaggio. Questa demo salva la prenotazione nel backend in memoria.
+          Scegli giorno e orario disponibili per una consulenza sul tuo prossimo tatuaggio.
         </p>
       </div>
 
@@ -86,29 +106,31 @@ function Booking() {
       {!loading && (
         <div className="booking-layout">
           <div className="calendar-box">
-            <h2>Calendario</h2>
-            <div className="day-list">
-              {dates.map((date) => (
-                <button
-                  key={date}
-                  className={selectedDate === date ? "active" : ""}
-                  onClick={() => {
-                    setSelectedDate(date);
-                    setSelectedSlotId("");
-                  }}
-                >
-                  {new Date(date).toLocaleDateString("it-IT", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </button>
-              ))}
+            <MonthCalendar
+              selectedDate={selectedDate}
+              initialDate={selectedDate}
+              getDayState={getDayState}
+              onSelect={(iso) => {
+                setSelectedDate(iso);
+                setSelectedSlotId("");
+              }}
+            />
+            <div className="calendar-legend">
+              <span><i className="legend-dot available" /> Disponibile</span>
+              <span><i className="legend-dot full" /> Tutto prenotato</span>
             </div>
+            {!hasFreeSlots && (
+              <p className="state-message">Al momento non ci sono orari disponibili. Riprova tra qualche giorno.</p>
+            )}
           </div>
 
           <div className="slots-box">
             <h2>Orari disponibili</h2>
+            {selectedDate ? (
+              <p className="slots-day">{formatLongDate(selectedDate)}</p>
+            ) : (
+              <p className="state-message">Scegli un giorno dal calendario.</p>
+            )}
             <div className="slot-list">
               {daySlots.map((slot) => (
                 <button
@@ -127,44 +149,55 @@ function Booking() {
               <div className="form-row">
                 <label>
                   Nome
-                  <input name="name" value={form.name} onChange={handleChange} required placeholder="Il tuo nome" />
+                  <input name="name" value={form.name} onChange={handleChange} required maxLength={80} autoComplete="name" placeholder="Il tuo nome" />
                 </label>
 
                 <label>
                   Email
-                  <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="nome@email.it" />
+                  <input name="email" type="email" value={form.email} onChange={handleChange} required maxLength={254} autoComplete="email" placeholder="nome@email.it" />
                 </label>
               </div>
 
               <div className="form-row">
                 <label>
                   Telefono
-                  <input name="phone" value={form.phone} onChange={handleChange} required placeholder="+39..." />
+                  <input name="phone" type="tel" value={form.phone} onChange={handleChange} required maxLength={30} autoComplete="tel" placeholder="+39..." />
                 </label>
 
                 <label>
                   Zona corpo
-                  <input name="placement" value={form.placement} onChange={handleChange} required placeholder="Braccio, schiena, gamba..." />
+                  <input name="placement" value={form.placement} onChange={handleChange} required maxLength={120} placeholder="Braccio, schiena, gamba..." />
                 </label>
               </div>
 
               <label>
                 Dimensione indicativa
-                <input name="approximateSize" value={form.approximateSize} onChange={handleChange} required placeholder="Es. 8 cm, mezza manica, piccolo..." />
+                <input name="approximateSize" value={form.approximateSize} onChange={handleChange} required maxLength={120} placeholder="Es. 8 cm, mezza manica, piccolo..." />
               </label>
 
               <label>
                 Idea del tatuaggio
-                <textarea name="tattooIdea" value={form.tattooIdea} onChange={handleChange} required placeholder="Descrivi stile, soggetto, riferimenti e significato." />
+                <textarea name="tattooIdea" value={form.tattooIdea} onChange={handleChange} required maxLength={1000} placeholder="Descrivi stile, soggetto, riferimenti e significato." />
               </label>
 
               {selectedSlot && (
                 <p className="selected-slot">
-                  Slot selezionato: <strong>{selectedSlot.date} · {selectedSlot.startTime}</strong>
+                  Orario scelto: <strong>{formatLongDate(selectedSlot.date)} · {selectedSlot.startTime}</strong>
                 </p>
               )}
 
-              {error && <p className="state-message error">{error}</p>}
+              {error && (
+                <div className="state-message error" role="alert">
+                  <p>{error}</p>
+                  {errorDetails.length > 0 && (
+                    <ul className="error-details">
+                      {errorDetails.map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               {message && <p className="state-message success">{message}</p>}
 
               <button className="btn btn-light full" disabled={submitting}>
@@ -174,23 +207,6 @@ function Booking() {
           </div>
         </div>
       )}
-
-      <section className="demo-bookings">
-        <h2>Prenotazioni demo</h2>
-        {bookings.length === 0 ? (
-          <p>Nessuna prenotazione inserita in questa sessione.</p>
-        ) : (
-          <div className="booking-cards">
-            {bookings.map((booking) => (
-              <article key={booking.id}>
-                <strong>{booking.name}</strong>
-                <span>{booking.date} · {booking.startTime}</span>
-                <p>{booking.tattooIdea}</p>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
     </section>
   );
 }

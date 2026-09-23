@@ -20,11 +20,7 @@ function Works() {
   return (
     <section className="page works-page">
       <div className="page-header">
-        <p className="eyebrow">Gallery</p>
         <h1>Lavori</h1>
-        <p>
-          Una selezione di tatuaggi realizzati nello studio Mik Tattoo Ink: blackwork, fine line, lettering, realistic e progetti custom.
-        </p>
       </div>
 
       {loading && <p className="state-message">Caricamento lavori...</p>}

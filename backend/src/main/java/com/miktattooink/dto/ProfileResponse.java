@@ -8,7 +8,6 @@ public record ProfileResponse(
         List<String> bio,
         String email,
         String phone,
-        String location,
-        List<SocialLinkResponse> socials
+        String location
 ) {
 }

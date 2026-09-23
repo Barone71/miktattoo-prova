@@ -7,7 +7,8 @@ Sito full-stack demo per un salone di tatuaggi moderno, minimale, bianco/nero, c
 - `frontend`: React + Vite + React Router
 - `backend`: Spring Boot REST API
 - immagini esempio generate localmente in `frontend/public/images`
-- dati demo in memoria per lavori, profilo, disponibilità e prenotazioni
+- database per orari e prenotazioni (H2 in locale, PostgreSQL online)
+- pannello admin protetto per il tatuatore
 
 ## Requisiti
 
@@ -34,16 +35,20 @@ Endpoint principali:
 GET    /api/works
 GET    /api/profile
 GET    /api/availability
-GET    /api/bookings
 POST   /api/bookings
-DELETE /api/bookings/{id}
+GET    /api/admin/bookings        (richiede login admin)
+DELETE /api/admin/bookings/{id}   (richiede login admin)
+GET    /api/admin/slots           (richiede login admin)
+POST   /api/admin/slots           (richiede login admin)
+DELETE /api/admin/slots/{id}      (richiede login admin)
+DELETE /api/admin/days/{data}/slots (richiede login admin: toglie gli orari liberi del giorno)
 ```
 
 Esempio POST:
 
 ```json
 {
-  "slotId": "slot-1",
+  "slotId": "1",
   "name": "Mario Rossi",
   "email": "mario@email.it",
   "phone": "+39 333 0000000",
@@ -81,18 +86,43 @@ Puoi cambiarlo creando un file `frontend/.env`:
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-## Nota demo
+## Database
 
-Il backend usa dati in memoria. Le prenotazioni vengono salvate finché il server resta acceso. Al riavvio, disponibilità e prenotazioni tornano allo stato iniziale.
+Orari e prenotazioni sono salvati in un database e restano anche dopo il riavvio del server.
 
-Per passare a una versione reale, il prossimo step è aggiungere:
+- **In locale**: H2 su file (`backend/data/`, escluso da git). Non serve installare nulla.
+- **Online**: PostgreSQL. Imposta le variabili ambiente `SPRING_DATASOURCE_URL` (es. `jdbc:postgresql://host:5432/nome_db`), `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD`.
 
-- database PostgreSQL o MySQL
-- entity JPA
-- repository Spring Data
-- autenticazione admin
-- invio email di conferma
-- integrazione Google Calendar
+Le tabelle vengono create in automatico da Flyway con gli script in `backend/src/main/resources/db/migration`. Per modificare lo schema si aggiunge un nuovo file (`V2__...sql`), senza mai modificare quelli già applicati.
+
+Gli orari prenotabili li aggiunge e li toglie il tatuatore dal pannello admin.
+
+## Pannello admin e impostazioni private
+
+La pagina `/admin` del sito è protetta da username e password: solo il tatuatore può vedere e cancellare le prenotazioni e aggiungere o togliere giorni e orari disponibili.
+
+In locale le impostazioni private stanno in `backend/.env.properties` (escluso da git):
+
+```properties
+ADMIN_USERNAME=mik
+ADMIN_PASSWORD=una-password-lunga-almeno-12-caratteri
+NOTIFY_EMAIL=email-del-tatuatore@example.com
+
+# Invio email via SMTP (es. Brevo: smtp-relay.brevo.com)
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_USERNAME=login-smtp
+MAIL_PASSWORD=chiave-smtp
+MAIL_FROM=indirizzo-mittente-verificato@example.com
+```
+
+A ogni nuova prenotazione il tatuatore riceve un'email a `NOTIFY_EMAIL` con tutti i dettagli; rispondendo, scrive direttamente al cliente. Finché `MAIL_HOST` è vuoto l'email non viene spedita ma scritta nel log del server.
+
+Online si impostano le stesse voci come variabili ambiente del servizio di hosting. Il sito deve essere servito in HTTPS.
+
+## Prossimi passi
+
+- pagamento della prenotazione (50 €) con Stripe
 
 ## Deploy su Netlify
 

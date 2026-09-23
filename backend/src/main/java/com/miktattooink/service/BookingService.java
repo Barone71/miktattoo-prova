@@ -8,65 +8,68 @@ import com.miktattooink.exception.SlotAlreadyBookedException;
 import com.miktattooink.exception.SlotNotFoundException;
 import com.miktattooink.model.AvailabilitySlot;
 import com.miktattooink.model.Booking;
+import com.miktattooink.repository.AvailabilitySlotRepository;
+import com.miktattooink.repository.BookingRepository;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Set;
 
 @Service
 public class BookingService {
 
-    private final Map<String, AvailabilitySlot> slots = new LinkedHashMap<>();
-    private final Map<Long, Booking> bookings = new LinkedHashMap<>();
-    private final AtomicLong bookingSequence = new AtomicLong(1);
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
-    public BookingService() {
-        seedAvailability();
+    private final AvailabilitySlotRepository slotRepository;
+    private final BookingRepository bookingRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    public BookingService(
+            AvailabilitySlotRepository slotRepository,
+            BookingRepository bookingRepository,
+            ApplicationEventPublisher eventPublisher
+    ) {
+        this.slotRepository = slotRepository;
+        this.bookingRepository = bookingRepository;
+        this.eventPublisher = eventPublisher;
     }
 
+    @Transactional(readOnly = true)
     public List<AvailabilitySlotResponse> findAllAvailability() {
-        return slots.values()
+        Set<Long> bookedSlotIds = bookingRepository.findBookedSlotIds();
+
+        return slotRepository.findByDateGreaterThanEqualOrderByDateAscStartTimeAsc(LocalDate.now())
                 .stream()
-                .sorted(Comparator.comparing(AvailabilitySlot::getDate).thenComparing(AvailabilitySlot::getStartTime))
-                .map(this::toSlotResponse)
+                .filter(this::isUpcoming)
+                .map(slot -> toSlotResponse(slot, !bookedSlotIds.contains(slot.getId())))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> findAllBookings() {
-        return bookings.values()
+        return bookingRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .sorted(Comparator.comparing(Booking::getCreatedAt).reversed())
                 .map(this::toBookingResponse)
                 .toList();
     }
 
+    @Transactional
     public BookingResponse createBooking(BookingRequest request) {
-        AvailabilitySlot slot = slots.get(request.slotId());
+        AvailabilitySlot slot = findBookableSlot(request.slotId());
 
-        if (slot == null) {
-            throw new SlotNotFoundException(request.slotId());
-        }
-
-        if (!slot.isAvailable()) {
+        if (bookingRepository.existsBySlotId(slot.getId())) {
             throw new SlotAlreadyBookedException(request.slotId());
         }
 
-        slot.markAsBooked();
-
         Booking booking = new Booking(
-                bookingSequence.getAndIncrement(),
-                slot.getId(),
-                slot.getDate(),
-                slot.getStartTime(),
-                slot.getEndTime(),
+                slot,
                 request.name().trim(),
                 request.email().trim(),
                 request.phone().trim(),
@@ -76,70 +79,66 @@ public class BookingService {
                 LocalDateTime.now()
         );
 
-        bookings.put(booking.getId(), booking);
-        return toBookingResponse(booking);
+        BookingResponse response;
+        try {
+            // saveAndFlush: se un altro cliente ha appena preso lo stesso orario,
+            // il vincolo unico del database scatta qui e non al commit.
+            response = toBookingResponse(bookingRepository.saveAndFlush(booking));
+        } catch (DataIntegrityViolationException ex) {
+            throw new SlotAlreadyBookedException(request.slotId());
+        }
+
+        // La notifica email parte solo a salvataggio completato (vedi BookingNotificationService).
+        eventPublisher.publishEvent(new BookingCreatedEvent(response));
+        return response;
     }
 
+    @Transactional
     public void deleteBooking(Long bookingId) {
-        Booking removed = bookings.remove(bookingId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException(bookingId));
 
-        if (removed == null) {
-            throw new BookingNotFoundException(bookingId);
-        }
-
-        AvailabilitySlot slot = slots.get(removed.getSlotId());
-        if (slot != null) {
-            slot.markAsAvailable();
-        }
+        // Cancellando la prenotazione l'orario torna automaticamente libero.
+        bookingRepository.delete(booking);
     }
 
-    private void seedAvailability() {
-        List<LocalDate> dates = List.of(
-                LocalDate.now().plusDays(2),
-                LocalDate.now().plusDays(3),
-                LocalDate.now().plusDays(5),
-                LocalDate.now().plusDays(7),
-                LocalDate.now().plusDays(8)
-        );
-
-        List<LocalTime> times = List.of(
-                LocalTime.of(10, 0),
-                LocalTime.of(11, 30),
-                LocalTime.of(15, 0),
-                LocalTime.of(17, 30)
-        );
-
-        int counter = 1;
-        for (LocalDate date : dates) {
-            for (LocalTime start : times) {
-                String id = "slot-" + counter++;
-                slots.put(id, new AvailabilitySlot(id, date, start, start.plusMinutes(45), true));
-            }
+    private AvailabilitySlot findBookableSlot(String rawSlotId) {
+        Long slotId;
+        try {
+            slotId = Long.valueOf(rawSlotId);
+        } catch (NumberFormatException ex) {
+            throw new SlotNotFoundException(rawSlotId);
         }
 
-        AvailabilitySlot occupied = slots.get("slot-3");
-        if (occupied != null) {
-            occupied.markAsBooked();
-        }
+        return slotRepository.findById(slotId)
+                .filter(this::isUpcoming)
+                .orElseThrow(() -> new SlotNotFoundException(rawSlotId));
     }
 
-    private AvailabilitySlotResponse toSlotResponse(AvailabilitySlot slot) {
+    private boolean isUpcoming(AvailabilitySlot slot) {
+        LocalDate today = LocalDate.now();
+        return slot.getDate().isAfter(today)
+                || (slot.getDate().isEqual(today) && slot.getStartTime().isAfter(LocalTime.now()));
+    }
+
+    private AvailabilitySlotResponse toSlotResponse(AvailabilitySlot slot, boolean available) {
         return new AvailabilitySlotResponse(
-                slot.getId(),
+                String.valueOf(slot.getId()),
                 slot.getDate().toString(),
-                slot.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")),
-                slot.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm")),
-                slot.isAvailable()
+                slot.getStartTime().format(TIME_FORMAT),
+                slot.getEndTime().format(TIME_FORMAT),
+                available
         );
     }
 
     private BookingResponse toBookingResponse(Booking booking) {
+        AvailabilitySlot slot = booking.getSlot();
         return new BookingResponse(
                 booking.getId(),
-                booking.getSlotId(),
-                booking.getDate().toString(),
-                booking.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")),
-                booking.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+                String.valueOf(slot.getId()),
+                slot.getDate().toString(),
+                slot.getStartTime().format(TIME_FORMAT),
+                slot.getEndTime().format(TIME_FORMAT),
                 booking.getName(),
                 booking.getEmail(),
                 booking.getPhone(),

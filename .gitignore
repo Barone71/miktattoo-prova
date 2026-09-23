@@ -6,3 +6,5 @@ target/
 .idea/
 .vscode/
 *.log
+.env.properties
+backend/data/

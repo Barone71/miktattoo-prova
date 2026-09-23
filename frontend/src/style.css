@@ -1,4 +1,6 @@
 :root {
+  /* Un solo font per tutto il sito: Barlow Condensed */
+  --font-main: "Barlow Condensed", "Arial Narrow", sans-serif;
   --black: #050505;
   --white: #f7f7f2;
   --gray: #a0a0a0;
@@ -25,7 +27,18 @@ body {
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 32rem),
     var(--black);
   color: var(--white);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-main);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 
 a {
@@ -35,6 +48,7 @@ a {
 
 button,
 input,
+select,
 textarea {
   font-family: inherit;
 }
@@ -60,20 +74,24 @@ img {
 }
 
 .logo {
-  display: grid;
-  gap: 1px;
-  font-weight: 800;
-  line-height: 0.9;
-  text-transform: uppercase;
-  letter-spacing: -0.06em;
+  display: block;
+  flex-shrink: 0;
 }
 
-.logo span:first-child {
-  font-size: 16px;
+/* Loghi in bianco e nero, come il resto del sito */
+.logo img,
+.footer-logo {
+  filter: grayscale(1) contrast(1.12);
 }
 
-.logo span:last-child {
-  font-size: 22px;
+.logo img {
+  height: 62px;
+  width: auto;
+  transition: transform 0.25s ease;
+}
+
+.logo:hover img {
+  transform: scale(1.03);
 }
 
 .nav-links {
@@ -83,7 +101,8 @@ img {
 
 .nav-links a {
   color: var(--gray);
-  font-size: 13px;
+  font-size: 16px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   transition: 0.25s ease;
@@ -109,7 +128,8 @@ main {
 
 .eyebrow {
   color: var(--gray);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   margin-bottom: 20px;
@@ -118,10 +138,9 @@ main {
 .page-header h1,
 .hero h1,
 .about-content h1 {
-  font-size: clamp(64px, 12vw, 170px);
+  font-size: clamp(64px, 11vw, 176px);
+  font-weight: 800;
   line-height: 0.86;
-  letter-spacing: -0.085em;
-  text-transform: uppercase;
 }
 
 .page-header p,
@@ -129,8 +148,8 @@ main {
 .intro-section p,
 .about-content p {
   color: var(--gray);
-  font-size: 18px;
-  line-height: 1.7;
+  font-size: 21px;
+  line-height: 1.6;
   max-width: 760px;
 }
 
@@ -138,9 +157,10 @@ main {
   border: 1px solid var(--white);
   padding: 16px 28px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   cursor: pointer;
   transition: 0.25s ease;
   display: inline-flex;
@@ -178,6 +198,8 @@ main {
 }
 
 .hero {
+  position: relative;
+  overflow: hidden;
   min-height: calc(100vh - 82px);
   padding: 72px 48px;
   display: grid;
@@ -187,6 +209,8 @@ main {
 }
 
 .hero-content {
+  position: relative;
+  z-index: 1;
   max-width: 980px;
 }
 
@@ -201,22 +225,28 @@ main {
   flex-wrap: wrap;
 }
 
+/* Foto a tutta altezza sulla destra che sfuma nel nero verso il testo */
 .hero-image {
-  height: 72vh;
-  overflow: hidden;
-  border-radius: 32px;
-  border: 1px solid var(--border);
-  background: var(--dark-gray);
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 62%;
+  pointer-events: none;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.55) 22%, #000 48%),
+    linear-gradient(to bottom, transparent 0%, #000 14%, #000 78%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.55) 22%, #000 48%),
+    linear-gradient(to bottom, transparent 0%, #000 14%, #000 78%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .hero-image img {
   height: 100%;
-  filter: grayscale(1) contrast(1.08);
-  transition: 0.65s ease;
-}
-
-.hero-image:hover img {
-  transform: scale(1.055);
+  object-position: 60% 30%;
+  filter: grayscale(1) contrast(1.08) brightness(0.9);
 }
 
 .reveal {
@@ -234,70 +264,40 @@ main {
   white-space: nowrap;
 }
 
-.marquee div {
+.marquee-track {
+  display: flex;
+  width: max-content;
   padding: 18px 0;
-  font-size: clamp(22px, 4vw, 54px);
-  font-weight: 800;
-  letter-spacing: -0.06em;
+  font-size: clamp(28px, 4.4vw, 60px);
+  font-weight: 700;
   text-transform: uppercase;
-  animation: slideText 18s linear infinite;
+  animation: slideText 100s linear infinite;
+}
+
+.marquee-group {
+  display: flex;
+}
+
+.marquee-group span {
+  padding-right: 0.3em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
 }
 
 .intro-section {
   padding: 110px 48px;
   border-bottom: 1px solid var(--border);
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 40px;
-}
-
-.section-number {
-  color: var(--gray);
 }
 
 .intro-section h2 {
   max-width: 920px;
   font-size: clamp(36px, 6vw, 86px);
   line-height: 0.95;
-  letter-spacing: -0.06em;
   margin-bottom: 30px;
-}
-
-.services-grid {
-  padding: 48px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
-}
-
-.services-grid article {
-  background: var(--black);
-  min-height: 280px;
-  padding: 34px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: 0.25s ease;
-}
-
-.services-grid article:hover {
-  background: var(--white);
-  color: var(--black);
-}
-
-.services-grid span {
-  font-size: 32px;
-  letter-spacing: -0.05em;
-}
-
-.services-grid p {
-  color: var(--gray);
-  line-height: 1.6;
-}
-
-.services-grid article:hover p {
-  color: var(--black);
 }
 
 .featured-strip {
@@ -322,7 +322,6 @@ main {
   margin: 0 auto 38px;
   font-size: clamp(42px, 8vw, 116px);
   line-height: 0.9;
-  letter-spacing: -0.075em;
 }
 
 .filter-row {
@@ -337,7 +336,11 @@ main {
   background: transparent;
   color: var(--gray);
   border-radius: 999px;
-  padding: 12px 18px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   cursor: pointer;
   transition: 0.25s ease;
 }
@@ -386,15 +389,21 @@ main {
 }
 
 .gallery-info h3 {
-  font-size: 22px;
+  font-size: 28px;
   margin-bottom: 8px;
 }
 
 .gallery-info span {
   color: var(--gray);
-  font-size: 13px;
+  font-size: 15px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+}
+
+.booking-page {
+  background:
+    linear-gradient(180deg, rgba(5, 5, 5, 0.55) 0%, rgba(5, 5, 5, 0.8) 55%, var(--black) 100%),
+    url("/images/studio-bg.jpg") center top / cover no-repeat;
 }
 
 .booking-layout {
@@ -405,7 +414,8 @@ main {
 
 .calendar-box,
 .slots-box,
-.demo-bookings {
+.admin-login,
+.admin-booking {
   padding: 34px;
   border: 1px solid var(--border);
   border-radius: 28px;
@@ -413,20 +423,16 @@ main {
 }
 
 .calendar-box h2,
-.slots-box h2,
-.demo-bookings h2 {
-  font-size: 34px;
-  letter-spacing: -0.05em;
+.slots-box h2 {
+  font-size: 38px;
   margin-bottom: 28px;
 }
 
-.day-list,
 .slot-list {
   display: grid;
   gap: 12px;
 }
 
-.day-list button,
 .slot-list button {
   padding: 18px 20px;
   border-radius: 18px;
@@ -439,9 +445,7 @@ main {
   transition: 0.25s ease;
 }
 
-.day-list button:hover,
-.slot-list button:hover,
-.day-list button.active,
+.slot-list button:hover:not(:disabled),
 .slot-list button.active {
   background: var(--white);
   color: var(--black);
@@ -462,7 +466,7 @@ main {
 }
 
 .slot-list button.active small,
-.slot-list button:hover small {
+.slot-list button:hover:not(:disabled) small {
   color: var(--black);
 }
 
@@ -470,6 +474,173 @@ main {
   opacity: 0.36;
   cursor: not-allowed;
   text-decoration: line-through;
+}
+
+/* Calendario mensile a quadretti */
+.month-calendar {
+  display: grid;
+  gap: 18px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-header strong {
+  font-size: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.calendar-header button {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--white);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.calendar-header button:hover:not(:disabled) {
+  background: var(--white);
+  color: var(--black);
+}
+
+.calendar-header button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-weekday {
+  color: var(--gray);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  padding-bottom: 6px;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--gray);
+  font-size: 15px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.calendar-cell {
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.calendar-cell.available {
+  border-color: var(--border);
+  background: var(--black);
+  color: var(--white);
+}
+
+/* Pallino sotto il numero: il giorno ha orari */
+.calendar-cell.available::after,
+.calendar-cell.full::after {
+  content: "";
+  position: absolute;
+  bottom: 18%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.calendar-cell.available::after {
+  background: var(--success);
+}
+
+.calendar-cell.full::after {
+  background: var(--gray);
+  opacity: 0.6;
+}
+
+.calendar-cell.full {
+  text-decoration: line-through;
+}
+
+.calendar-cell.today {
+  border-color: var(--gray);
+}
+
+.calendar-cell.past,
+.calendar-cell:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+button.calendar-cell:hover:not(:disabled) {
+  border-color: var(--white);
+  color: var(--white);
+}
+
+.calendar-cell.active,
+button.calendar-cell.active:hover {
+  background: var(--white);
+  border-color: var(--white);
+  color: var(--black);
+}
+
+.calendar-cell.active::after {
+  background: var(--black);
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 20px;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.available {
+  background: var(--success);
+}
+
+.legend-dot.full {
+  background: var(--gray);
+}
+
+.slots-day {
+  color: var(--gray);
+  margin: -14px 0 22px;
+  text-transform: capitalize;
 }
 
 .booking-form {
@@ -490,10 +661,14 @@ label {
   display: grid;
   gap: 10px;
   color: var(--soft-gray);
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--border);
@@ -511,6 +686,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--white);
 }
@@ -529,60 +705,175 @@ textarea:focus {
   color: var(--danger);
 }
 
+.error-details {
+  margin: 6px 0 0 18px;
+}
+
 .state-message.success {
   color: var(--success);
 }
 
-.demo-bookings {
-  margin-top: 28px;
-}
-
-.demo-bookings > p {
-  color: var(--gray);
-}
-
-.booking-cards {
+.admin-login {
+  max-width: 440px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  max-width: none;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.admin-list {
+  display: grid;
   gap: 14px;
 }
 
-.booking-cards article {
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--black);
-  padding: 20px;
+.admin-booking {
+  display: grid;
+  grid-template-columns: 170px 1fr 1.4fr auto;
+  gap: 28px;
+  align-items: start;
 }
 
-.booking-cards span {
-  display: block;
-  color: var(--gray);
-  margin: 8px 0;
+.admin-booking-when,
+.admin-booking-who,
+.admin-booking-what {
+  display: grid;
+  gap: 6px;
 }
 
-.booking-cards p {
+.admin-booking-when span,
+.admin-booking-what span,
+.admin-booking-who a {
   color: var(--gray);
+  font-size: 14px;
+}
+
+.admin-booking-who a:hover {
+  color: var(--white);
+}
+
+.admin-booking-what p {
   line-height: 1.5;
 }
 
+.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-small {
+  padding: 10px 16px;
+  font-size: 11px;
+}
+
+.admin-tabs {
+  margin-top: -30px;
+}
+
+.admin-slot-list {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-slot-list li {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--black);
+}
+
+.admin-slot-list span {
+  color: var(--success);
+  font-size: 14px;
+}
+
+.admin-slot-list li.booked span {
+  color: var(--white);
+}
+
+.admin-slot-form {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.admin-day-actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-danger:hover {
+  background: var(--danger);
+  color: var(--black);
+}
+
+/* Chi sono: la foto è lo sfondo della pagina a sinistra e sfuma nel nero verso il testo */
+.about-page {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 82px);
+  display: flex;
+  align-items: center;
+}
+
 .about-layout {
+  position: relative;
+  z-index: 1;
+  width: 100%;
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
   gap: 70px;
   align-items: center;
 }
 
+.about-layout .about-content {
+  grid-column: 2;
+}
+
 .about-image {
-  height: 760px;
-  border-radius: 32px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--dark-gray);
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 58%;
+  pointer-events: none;
+  -webkit-mask-image:
+    linear-gradient(to left, transparent 0%, rgba(0, 0, 0, 0.55) 22%, #000 48%),
+    linear-gradient(to bottom, transparent 0%, #000 12%, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to left, transparent 0%, rgba(0, 0, 0, 0.55) 22%, #000 48%),
+    linear-gradient(to bottom, transparent 0%, #000 12%, #000 80%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .about-image img {
   height: 100%;
-  filter: grayscale(1) contrast(1.08);
+  object-position: 45% 30%;
+  filter: grayscale(1) contrast(1.08) brightness(0.9);
 }
 
 .about-content p {
@@ -612,11 +903,20 @@ textarea:focus {
 }
 
 .social-links a {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 13px 20px;
-  color: var(--gray);
+  border-radius: 50%;
+  color: var(--white);
   transition: 0.25s ease;
+}
+
+.social-links svg {
+  width: 22px;
+  height: 22px;
 }
 
 .social-links a:hover {
@@ -634,14 +934,36 @@ textarea:focus {
   font-size: 14px;
 }
 
-.footer strong {
-  color: var(--white);
-  text-transform: uppercase;
-  letter-spacing: -0.04em;
+.footer-brand {
+  display: grid;
+  gap: 14px;
+}
+
+.footer-logo {
+  height: 56px;
+  width: auto;
 }
 
 .footer-right {
   text-align: right;
+}
+
+.footer {
+  align-items: center;
+}
+
+.footer-socials {
+  margin-top: 0;
+}
+
+.footer-socials a {
+  width: 44px;
+  height: 44px;
+}
+
+.footer-socials svg {
+  width: 19px;
+  height: 19px;
 }
 
 @keyframes fadeUp {
@@ -676,10 +998,9 @@ textarea:focus {
   .hero,
   .about-layout,
   .booking-layout,
-  .services-grid,
   .gallery-grid,
   .featured-strip,
-  .booking-cards {
+  .admin-booking {
     grid-template-columns: 1fr;
   }
 
@@ -687,8 +1008,16 @@ textarea:focus {
     padding: 54px 22px;
   }
 
+  /* Su schermi stretti la foto diventa lo sfondo dell'hero, attenuata dietro il testo */
   .hero-image {
-    height: 520px;
+    width: 100%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  }
+
+  /* Scurita col filtro e non con opacity: l'animazione di comparsa riporta l'opacity a 1 */
+  .hero-image img {
+    filter: grayscale(1) contrast(1.05) brightness(0.38);
   }
 
   .page {
@@ -697,11 +1026,6 @@ textarea:focus {
 
   .intro-section {
     padding: 80px 22px;
-    grid-template-columns: 1fr;
-  }
-
-  .services-grid {
-    padding: 22px;
   }
 
   .gallery-card,
@@ -714,27 +1038,65 @@ textarea:focus {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* Su schermi stretti la foto sta dietro al testo, scurita */
   .about-image {
-    height: 560px;
+    width: 100%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%);
+  }
+
+  .about-image img {
+    filter: grayscale(1) contrast(1.05) brightness(0.35);
+  }
+
+  .about-layout .about-content {
+    grid-column: auto;
   }
 
   .footer {
     padding: 28px 22px;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-brand {
+    justify-items: center;
   }
 
   .footer-right {
-    text-align: left;
+    text-align: center;
   }
 }
 
 @media (max-width: 620px) {
+  .admin-slot-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-slot-form .btn {
+    grid-column: 1 / -1;
+  }
+
+  .admin-slot-list li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .admin-slot-list li span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
   .navbar {
     height: auto;
     padding: 20px 18px;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 18px;
+  }
+
+  .logo img {
+    height: 52px;
   }
 
   .nav-links {
@@ -751,7 +1113,6 @@ textarea:focus {
     padding: 44px 18px;
   }
 
-  .hero-image,
   .gallery-card,
   .featured-strip img {
     height: 420px;
@@ -779,11 +1140,28 @@ textarea:focus {
 
   .calendar-box,
   .slots-box,
-  .demo-bookings {
+  .admin-login,
+  .admin-booking {
     padding: 24px;
   }
 
-  .about-image {
-    height: 430px;
+  /* Calendario: meno margini interni così i quadretti arrivano a ~44 px, comodi da toccare */
+  .calendar-box {
+    padding: 22px 10px;
+  }
+
+  .calendar-box > h2,
+  .calendar-box > .calendar-legend,
+  .calendar-box > .state-message {
+    padding: 0 8px;
+  }
+
+  .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-cell {
+    border-radius: 10px;
+    font-size: 15px;
   }
 }

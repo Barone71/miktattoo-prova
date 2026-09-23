@@ -1,24 +1,43 @@
 package com.miktattooink.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+@Entity
+@Table(name = "availability_slot")
 public class AvailabilitySlot {
-    private final String id;
-    private final LocalDate date;
-    private final LocalTime startTime;
-    private final LocalTime endTime;
-    private boolean available;
 
-    public AvailabilitySlot(String id, LocalDate date, LocalTime startTime, LocalTime endTime, boolean available) {
-        this.id = id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "slot_date", nullable = false)
+    private LocalDate date;
+
+    @Column(name = "start_time", nullable = false)
+    private LocalTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private LocalTime endTime;
+
+    protected AvailabilitySlot() {
+        // richiesto da JPA
+    }
+
+    public AvailabilitySlot(LocalDate date, LocalTime startTime, LocalTime endTime) {
         this.date = date;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.available = available;
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
@@ -32,17 +51,5 @@ public class AvailabilitySlot {
 
     public LocalTime getEndTime() {
         return endTime;
-    }
-
-    public boolean isAvailable() {
-        return available;
-    }
-
-    public void markAsBooked() {
-        this.available = false;
-    }
-
-    public void markAsAvailable() {
-        this.available = true;
     }
 }

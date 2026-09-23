@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import SocialLinks from "../components/SocialLinks";
 import { getProfile } from "../services/api";
 
 function About() {
@@ -21,13 +22,13 @@ function About() {
 
   return (
     <section className="page about-page">
+      <div className="about-image" aria-hidden="true">
+        <img src={profile.imageUrl} alt="" />
+      </div>
+
       <div className="about-layout">
-        <div className="about-image">
-          <img src={profile.imageUrl} alt={profile.name} />
-        </div>
 
         <div className="about-content">
-          <p className="eyebrow">Chi sono</p>
           <h1>{profile.name}</h1>
 
           {profile.bio.map((paragraph) => (
@@ -41,13 +42,7 @@ function About() {
             <p>Studio: {profile.location}</p>
           </div>
 
-          <div className="social-links">
-            {profile.socials.map((social) => (
-              <a key={social.label} href={social.url} target="_blank" rel="noreferrer">
-                {social.label}
-              </a>
-            ))}
-          </div>
+          <SocialLinks />
         </div>
       </div>
     </section>
