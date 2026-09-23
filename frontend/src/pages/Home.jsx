@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import WorksCarousel from "../components/WorksCarousel";
 
 const STYLES = ["Blackwork", "Fine Line", "Realistic", "Lettering", "Custom", "Black & Grey"];
 // L'elenco è ripetuto più volte per riempire anche gli schermi molto larghi
@@ -57,11 +58,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="featured-strip">
-        <img src="/images/work-1.jpg" alt="Tattoo blackwork serpente" />
-        <img src="/images/work-5.jpg" alt="Tattoo leone black & grey" />
-        <img src="/images/work-4.jpg" alt="Tattoo occhio realistico" />
-      </section>
+      <WorksCarousel />
 
       <section className="cta-section">
         <h2>Hai un’idea da trasformare in pelle?</h2>
